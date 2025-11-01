@@ -3,12 +3,14 @@ import logger from "#lib/common/logger";
 import bodyParser from "body-parser";
 import express from "express";
 import codeActivityRouter from "./router/code/activity";
+import codeRepositoryRouter from "./router/code/repository";
 import notfoundRouter from "./router/notfound";
 
 const app = express();
 app.use(bodyParser.json());
 
 const rootRouter = express.Router();
+rootRouter.use("/code/repository", codeRepositoryRouter);
 rootRouter.use("/code/activity", codeActivityRouter);
 rootRouter.use(notfoundRouter);
 

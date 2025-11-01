@@ -6,7 +6,6 @@ const codeActivityRouter = express.Router();
 useRequestHandler({
   router: codeActivityRouter,
   method: "get",
-  path: "/",
   requestHandler: async () => {
     return {
       status: 200,
