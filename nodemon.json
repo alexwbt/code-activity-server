@@ -1,0 +1,11 @@
+{
+  "watch": [
+    "package.json",
+    "src",
+    "env",
+    "env/.env"
+  ],
+  "ext": "*",
+  "ignore": [],
+  "exec": "ts-node ./src/main.ts"
+}
