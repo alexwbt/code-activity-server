@@ -2,16 +2,14 @@ import { ENV } from "#lib/common/env";
 import logger from "#lib/common/logger";
 import bodyParser from "body-parser";
 import express from "express";
-import codeActivityRouter from "./router/code/activity";
-import codeRepositoryRouter from "./router/code/repository";
 import notfoundRouter from "./router/notfound";
+import repositoryRouter from "./router/repository";
 
 const app = express();
 app.use(bodyParser.json());
 
 const rootRouter = express.Router();
-rootRouter.use("/code/repository", codeRepositoryRouter);
-rootRouter.use("/code/activity", codeActivityRouter);
+rootRouter.use("/repository", repositoryRouter);
 rootRouter.use(notfoundRouter);
 
 type AppOption = {
