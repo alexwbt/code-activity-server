@@ -1,11 +1,13 @@
 import { ENV } from "#lib/common/env";
 import logger from "#lib/common/logger";
 import bodyParser from "body-parser";
+import cors from "cors";
 import express from "express";
 import notfoundRouter from "./router/notfound";
 import repositoryRouter from "./router/repository";
 
 const app = express();
+app.use(cors());
 app.use(bodyParser.json());
 
 const rootRouter = express.Router();

@@ -82,20 +82,25 @@ useRequestHandler({
   router: repositoryRouter,
   method: "get",
   path: "/activity",
-  requestHandler: async () => {
+  querySchema: Joi.object<{
+    author: string;
+  }>({
+    author: Joi.string().required(),
+  }).required(),
+  requestHandler: async ({ query }) => {
 
     const entries = await readdir(repositoryDirectory, { withFileTypes: true });
     const repositories = entries.filter(e => e.isDirectory()).map(e => e.name);
 
-    const body = await Promise.all(repositories.map(async e => {
-      const baseDir = `${repositoryDirectory}/${e}`;
-      const res = await simpleGit({ baseDir }).diff();
-      return res;
+    const commits = await Promise.all(repositories.map(async e => {
+      const git = simpleGit({ baseDir: `${repositoryDirectory}/${e}` });
+      const logs = await git.log(["--all", "-10", "--author", query.author]);
+      return logs.all;
     }));
 
     return {
       status: 200,
-      body: JSON.stringify(body, undefined, 4),
+      body: commits,
     };
   },
 });
