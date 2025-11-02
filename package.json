@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon",
-    "build": "rm -rf ./dist && tsc --build"
+    "build": "rm -rf ./dist && tsc --build && tsc-alias"
   },
   "imports": {
     "#app/*": "./src/app/*.ts",
@@ -27,6 +27,7 @@
     "@types/node": "^24.9.2",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.9.3"
   }
 }

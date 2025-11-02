@@ -2,7 +2,7 @@
 #
 # Builder
 #
-FROM node:24-alpine3.19 AS builder
+FROM node:24-alpine3.22 AS builder
 
 WORKDIR /app
 
@@ -18,9 +18,11 @@ RUN npm run build
 #
 # Runtime
 #
-FROM node:24-alpine3.19
+FROM node:24-alpine3.22
 
 WORKDIR /app
+
+RUN apk update && apk add curl git
 
 COPY ./package.json .
 COPY ./package-lock.json .

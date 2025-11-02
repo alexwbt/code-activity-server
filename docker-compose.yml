@@ -1,0 +1,6 @@
+
+services:
+
+  code-activity-server:
+    image: code-activity-server:latest
+    build: .

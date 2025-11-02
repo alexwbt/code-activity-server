@@ -13,7 +13,7 @@ import simpleGit from "simple-git";
 const repositoryRouter = express.Router();
 
 const repositoryDirectory = getEnvString("REPOSITORY_DIRECTORY", "repositories");
-const activityFileFilter = getEnvString("ACTIVITY_FILE_FILTER", "\\.(ts|tsx|js|jsx|java)$");
+const activityFileFilter = getEnvString("ACTIVITY_FILE_FILTER", "\\.(ts|tsx|js|jsx|java|cpp|hpp|txt)$");
 
 /**
  * Create repository
