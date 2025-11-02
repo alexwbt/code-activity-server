@@ -139,7 +139,13 @@ useRequestHandler({
 
     const files = commits.flatMap(e => e)
       .filter(e => e.diff)
-      .flatMap(e => gitdiffParser.parse(e.diff).map(f => ({ ...f, commit: e })))
+      .flatMap(e => gitdiffParser.parse(e.diff).map(f => ({
+        ...f,
+        commit: ({
+          ...e,
+          diff: undefined,
+        })
+      })))
       .filter(f => f.newPath.match(new RegExp(activityFileFilter))
         && f.hunks.some(h => h.changes.some(c => c.type === "insert")))
       .map(f => ({
