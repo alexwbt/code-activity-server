@@ -22,7 +22,7 @@ FROM node:24-alpine3.22
 
 WORKDIR /app
 
-RUN apk update && apk add curl git
+RUN apk update && apk add curl git openssh
 
 COPY ./package.json .
 COPY ./package-lock.json .
