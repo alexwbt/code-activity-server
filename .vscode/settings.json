@@ -46,7 +46,8 @@
   "javascript.format.semicolons": "insert",
   "javascript.preferences.quoteStyle": "double",
   "cSpell.words": [
-    "vite",
-    "alexwbt"
+    "alexwbt",
+    "gitdiff",
+    "vite"
   ]
 }

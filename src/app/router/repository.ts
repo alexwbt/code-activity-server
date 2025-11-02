@@ -5,6 +5,7 @@ import useRequestHandler from "#lib/express/useRequestHandler";
 import express from "express";
 import { existsSync } from "fs";
 import { readdir } from "fs/promises";
+import gitdiffParser from "gitdiff-parser";
 import Joi from "joi";
 import path from "path";
 import simpleGit from "simple-git";
@@ -12,6 +13,7 @@ import simpleGit from "simple-git";
 const repositoryRouter = express.Router();
 
 const repositoryDirectory = getEnvString("REPOSITORY_DIRECTORY", "repositories");
+const activityFileFilter = getEnvString("ACTIVITY_FILE_FILTER", "\\.(ts|tsx|js|jsx|java)$");
 
 /**
  * Create repository
@@ -94,17 +96,29 @@ useRequestHandler({
 
     const commits = await Promise.all(repositories.map(async repo => {
       const git = simpleGit({ baseDir: `${repositoryDirectory}/${repo}` });
-      const logs = await git.log(["--all", "-1", "--author", query.author, "--no-merges"]);
+      const logs = await git.log(["--all", "-10", "--perl-regexp", "--author", query.author, "--no-merges"]);
       return await Promise.all(logs.all.map(async commit => ({
         ...commit,
         repo,
-        diff: await git.diff([`${commit.hash}`, "-w"])
+        diff: await git.diff([`${commit.hash}^!`, "-w"]),
       })));
     }));
 
+    const files = commits.flatMap(e => e)
+      .filter(e => e.diff)
+      .flatMap(e => gitdiffParser.parse(e.diff).map(f => ({ ...f, commit: e })))
+      .filter(f => f.hunks.some(h => h.changes.some(c => c.type === "insert")))
+      .filter(f => f.newPath.match(new RegExp(activityFileFilter)))
+      .map(f => ({
+        ...f,
+        timestamp: new Date(f.commit.date).getTime(),
+      }))
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, 10);
+
     return {
       status: 200,
-      body: commits.flatMap(e => e),
+      body: files,
     };
   },
 });
