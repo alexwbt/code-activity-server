@@ -4,7 +4,7 @@ import RequestHandlerError from "#lib/express/RequestHandlerError";
 import useRequestHandler from "#lib/express/useRequestHandler";
 import express from "express";
 import { existsSync } from "fs";
-import { readdir } from "fs/promises";
+import { readdir, rm } from "fs/promises";
 import gitdiffParser from "gitdiff-parser";
 import Joi from "joi";
 import path from "path";
@@ -65,7 +65,11 @@ useRequestHandler({
     await Promise.all(repositories.map(async e => {
       const baseDir = `${repositoryDirectory}/${e}`;
       const res = await simpleGit({ baseDir }).fetch();
-      logger.info(`${baseDir}: ${JSON.stringify(res)}`);
+
+      const message = Object.values(res).some(e => typeof e === "string" ? !!e : !!e?.length)
+        ? JSON.stringify(res, undefined, 4)
+        : "up to date";
+      logger.info(`${baseDir}: ${message}`);
     }));
 
     return {
@@ -73,6 +77,35 @@ useRequestHandler({
       body: {
         repositories,
       },
+    };
+  },
+});
+
+/**
+ * Delete repository
+ */
+useRequestHandler({
+  router: repositoryRouter,
+  method: "delete",
+  path: "/:repo",
+
+  paramsSchema: Joi.object<{
+    repo: string;
+  }>({
+    repo: Joi.string().required(),
+  }).required(),
+
+  requestHandler: async ({ params }) => {
+    const dest = `${repositoryDirectory}/${params.repo}`;
+
+    if (!existsSync(dest))
+      throw new RequestHandlerError(400, `repository "${params.repo}" does not exist`);
+
+    await rm(dest, { recursive: true, force: true });
+    logger.info(`Deleted repository: ${dest}`);
+
+    return {
+      status: 200,
     };
   },
 });
@@ -96,7 +129,7 @@ useRequestHandler({
 
     const commits = await Promise.all(repositories.map(async repo => {
       const git = simpleGit({ baseDir: `${repositoryDirectory}/${repo}` });
-      const logs = await git.log(["--all", "-10", "--perl-regexp", "--author", query.author, "--no-merges"]);
+      const logs = await git.log(["--all", "-20", "--perl-regexp", "--author", query.author, "--no-merges"]);
       return await Promise.all(logs.all.map(async commit => ({
         ...commit,
         repo,
@@ -107,14 +140,14 @@ useRequestHandler({
     const files = commits.flatMap(e => e)
       .filter(e => e.diff)
       .flatMap(e => gitdiffParser.parse(e.diff).map(f => ({ ...f, commit: e })))
-      .filter(f => f.hunks.some(h => h.changes.some(c => c.type === "insert")))
-      .filter(f => f.newPath.match(new RegExp(activityFileFilter)))
+      .filter(f => f.newPath.match(new RegExp(activityFileFilter))
+        && f.hunks.some(h => h.changes.some(c => c.type === "insert")))
       .map(f => ({
         ...f,
         timestamp: new Date(f.commit.date).getTime(),
       }))
       .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 10);
+      .slice(0, 20);
 
     return {
       status: 200,
