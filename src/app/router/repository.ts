@@ -92,15 +92,19 @@ useRequestHandler({
     const entries = await readdir(repositoryDirectory, { withFileTypes: true });
     const repositories = entries.filter(e => e.isDirectory()).map(e => e.name);
 
-    const commits = await Promise.all(repositories.map(async e => {
-      const git = simpleGit({ baseDir: `${repositoryDirectory}/${e}` });
-      const logs = await git.log(["--all", "-10", "--author", query.author]);
-      return logs.all;
+    const commits = await Promise.all(repositories.map(async repo => {
+      const git = simpleGit({ baseDir: `${repositoryDirectory}/${repo}` });
+      const logs = await git.log(["--all", "-1", "--author", query.author, "--no-merges"]);
+      return await Promise.all(logs.all.map(async commit => ({
+        ...commit,
+        repo,
+        diff: await git.diff([`${commit.hash}`, "-w"])
+      })));
     }));
 
     return {
       status: 200,
-      body: commits,
+      body: commits.flatMap(e => e),
     };
   },
 });
