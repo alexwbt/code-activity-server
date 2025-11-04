@@ -8,12 +8,23 @@ import { readdir, rm } from "fs/promises";
 import gitdiffParser from "gitdiff-parser";
 import Joi from "joi";
 import path from "path";
-import simpleGit from "simple-git";
+import simpleGit, { SimpleGit } from "simple-git";
 
 const repositoryRouter = express.Router();
 
 const repositoryDirectory = getEnvString("REPOSITORY_DIRECTORY", "repositories");
 const activityFileFilter = getEnvString("ACTIVITY_FILE_FILTER", "\\.(ts|tsx|js|jsx|java|cpp|hpp|txt)$");
+
+const git = simpleGit();
+const repositoryGits: {
+  [repo: string]: SimpleGit | undefined;
+} = {};
+const getRepositoryGit = (repo: string) => {
+  if (!repositoryGits[repo])
+    repositoryGits[repo] = simpleGit({ baseDir: `${repositoryDirectory}/${repo}` });
+
+  return repositoryGits[repo];
+};
 
 /**
  * Create repository
@@ -38,7 +49,7 @@ useRequestHandler({
       throw new RequestHandlerError(400, "duplicate repository name");
 
     logger.info(`Cloning repo ${name} (${body.url}) into ${dest}`);
-    simpleGit().clone(body.url, dest);
+    git.clone(body.url, dest);
 
     return {
       status: 200,
@@ -62,14 +73,13 @@ useRequestHandler({
 
     logger.info(`Updating repositories: ${repositories.join(", ")}`);
 
-    await Promise.all(repositories.map(async e => {
-      const baseDir = `${repositoryDirectory}/${e}`;
-      const res = await simpleGit({ baseDir }).fetch();
+    await Promise.all(repositories.map(async repo => {
+      const res = await getRepositoryGit(repo).fetch();
 
       const message = Object.values(res).some(e => typeof e === "string" ? !!e : !!e?.length)
         ? JSON.stringify(res, undefined, 4)
         : "up to date";
-      logger.info(`${baseDir}: ${message}`);
+      logger.info(`${repositoryDirectory}/${repo}: ${message}`);
     }));
 
     return {
@@ -128,7 +138,7 @@ useRequestHandler({
     const repositories = entries.filter(e => e.isDirectory()).map(e => e.name);
 
     const commits = await Promise.all(repositories.map(async repo => {
-      const git = simpleGit({ baseDir: `${repositoryDirectory}/${repo}` });
+      const git = getRepositoryGit(repo);
       const logs = await git.log(["--all", "-20", "--perl-regexp", "--author", query.author, "--no-merges"]);
       return await Promise.all(logs.all.map(async commit => ({
         ...commit,
