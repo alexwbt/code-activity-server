@@ -15,13 +15,16 @@ const repositoryRouter = express.Router();
 const repositoryDirectory = getEnvString("REPOSITORY_DIRECTORY", "repositories");
 const activityFileFilter = getEnvString("ACTIVITY_FILE_FILTER", "\\.(ts|tsx|js|jsx|java|cpp|hpp|txt)$");
 
-const git = simpleGit();
+const git = simpleGit({ maxConcurrentProcesses: 1 });
 const repositoryGits: {
   [repo: string]: SimpleGit | undefined;
 } = {};
 const getRepositoryGit = (repo: string) => {
   if (!repositoryGits[repo])
-    repositoryGits[repo] = simpleGit({ baseDir: `${repositoryDirectory}/${repo}` });
+    repositoryGits[repo] = simpleGit({
+      baseDir: `${repositoryDirectory}/${repo}`,
+      maxConcurrentProcesses: 1,
+    });
 
   return repositoryGits[repo];
 };
